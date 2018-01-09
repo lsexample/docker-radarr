@@ -1,15 +1,14 @@
+#!/usr/bin/env groovy
+
+def RADARR_RELEASE = sh (
+    script: '''curl -s https://api.github.com/repos/Radarr/Radarr/releases | jq -r '.[] | .tag_name' | head -1''',
+    returnStdout: true
+    ).trim()
+def TAG_NAME = binding.variables.get("TAG_NAME")
+
 pipeline {
     agent any
     stages {
-        stage('External-ReleaseInfo') {
-            steps {
-                RADARR_RELEASE = sh (
-                 script: '''curl -s https://api.github.com/repos/Radarr/Radarr/releases | jq -r '.[] | .tag_name' | head -1''',
-                 returnStdout: true
-                ).trim()
-                echo "Set Radarr release for this build to ${RADARR_RELEASE}"
-            }
-        }
         stage('Build') {
             steps {
                 echo 'Building latest releases of Radarr'
@@ -24,7 +23,6 @@ pipeline {
         stage('Push-Release') {
             when { branch "Release" }
             steps {
-                def TAG_NAME = binding.variables.get("TAG_NAME")
                 if (TAG_NAME != null) {
                   echo 'First push the latest tag' 
                   sh "docker tag qcom/radarr:${RADARR_RELEASE} qcom/radarr:latest"
