@@ -21,11 +21,12 @@ pipeline {
        echo 'CI Tests for future use'
       }
     }
-    stage('Push') {
+    stage('Compile-and-Push-Release') {
+      when { branch "Release" }
       steps {
         echo 'First push the latest tag'
-        sh 'docker tag qcom/radarr:${RADARR_RELEASE} qcom/radarr:latest'
-        sh 'docker push qcom/radarr:latest'
+        sh "docker tag qcom/radarr:${RADARR_RELEASE} qcom/radarr:latest"
+        sh "docker push qcom/radarr:latest"
         echo 'Pushing by release tag'
         sh "docker push qcom/radarr:${RADARR_RELEASE}"
       }
