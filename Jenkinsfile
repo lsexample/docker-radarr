@@ -1,17 +1,19 @@
 pipeline {
     agent any
     stages {
-        stage('ReleaseInfo') {
+        stage('External-ReleaseInfo') {
             steps {
-                sh '''curl -s https://api.github.com/repos/Radarr/Radarr/releases | jq -r '.[] | .tag_name' | head -10 > releases.txt'''
+                RADARR_RELEASE = sh (
+                 script: '''curl -s https://api.github.com/repos/Radarr/Radarr/releases | jq -r '.[] | .tag_name' | head -1''',
+                 returnStdout: true
+                ).trim()
+                echo "Set Radarr release for this build to ${RADARR_RELEASE}"
             }
         }
         stage('Build') {
             steps {
-                echo 'Building last 10 releases of Radarr'
-                sh '''for version in $(cat releases.txt); do 
-                        docker build -t qcom/radarr:$version --build-arg radarr_tag=$version . 
-                      done'''
+                echo 'Building latest releases of Radarr'
+                sh "docker build -t qcom/radarr:${RADARR_RELEASE} --build-arg radarr_tag=${RADARR_RELEASE} ."
             }
         }
         stage('Test') {
@@ -19,15 +21,19 @@ pipeline {
                 echo 'CI Tests for future use'
             }
         }
-        stage('Push') {
+        stage('Push-Release') {
+            when { branch "Release" }
             steps {
-                echo 'First push the latest tag'
-                sh 'docker tag qcom/radarr:$(cat releases.txt |head -1) qcom/radarr:latest'
-                sh 'docker push qcom/radarr:latest'
-                echo 'Now pushing the last 10 release tags for the remote project'
-                sh '''for version in $(cat releases.txt); do 
-                        docker push qcom/radarr:$version
-                      done'''
+                def TAG_NAME = binding.variables.get("TAG_NAME")
+                if (TAG_NAME != null) {
+                  echo 'First push the latest tag' 
+                  sh "docker tag qcom/radarr:${RADARR_RELEASE} qcom/radarr:latest"
+                  sh "docker push qcom/radarr:latest"
+                  echo 'Now pushing the last 10 release tags for the remote project'
+                  sh "docker push qcom/radarr:${RADARR_RELEASE}"
+                } else {
+                  error("Anything commited to the release branch must have a version tag")
+                }
             }
         }
     }
