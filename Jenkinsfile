@@ -33,11 +33,13 @@ pipeline {
           env.COMMIT_SHA = sh(
             script: '''git rev-parse HEAD''',
             returnStdout: true).trim()
+        }
+        script{
           env.LS_TAG = sh(
-            script: '''if [ "$(git describe --exact-match --tags HEAD 2>/dev/null)" == ${env.LS_RELEASE} ]; then echo ${LS_RELEASE}; else echo $((${LS_RELEASE} + 1)) ; fi''',
+            script: '''if [ "$(git describe --exact-match --tags HEAD 2>/dev/null)" == ${LS_RELEASE} ]; then echo ${LS_RELEASE}; else echo $((${LS_RELEASE} + 1)) ; fi''',
             returnStdout: true).trim()
           env.NEW_TAG = sh(
-            script: '''if [ "$(git describe --exact-match --tags HEAD 2>/dev/null)" == ${env.LS_RELEASE} ]; then echo false; else echo true ; fi''',
+            script: '''if [ "$(git describe --exact-match --tags HEAD 2>/dev/null)" == ${LS_RELEASE} ]; then echo false; else echo true ; fi''',
             returnStdout: true).trim()
         }
       }
@@ -45,7 +47,7 @@ pipeline {
     stage('Build') {
       steps {
           echo "Building most current release of ${EXT_REPO}"
-          sh "docker build --no-cache -t ${DOCKERHUB_IMAGE}:${env.EXT_RELEASE}-ls${env.LS_TAG} --build-arg radarr_tag=${EXT_RELEASE} ."
+          sh "docker build --no-cache -t ${DOCKERHUB_IMAGE}:${EXT_RELEASE}-ls${LS_TAG} --build-arg radarr_tag=${EXT_RELEASE} ."
         }
     }
     stage('Test') {
