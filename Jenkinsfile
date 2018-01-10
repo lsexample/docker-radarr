@@ -3,6 +3,7 @@ pipeline {
   environment {
     EXT_USER = 'Radarr'
     EXT_REPO = 'Radarr'
+    BUILD_VERSION_ARG = 'radarr_tag'
     LS_USER = 'lsexample'
     LS_REPO = 'docker-radarr'
     DOCKERHUB_IMAGE = 'qcom/radarr'
@@ -19,7 +20,7 @@ pipeline {
             script: '''curl -s https://api.github.com/repos/${EXT_USER}/${EXT_REPO}/releases | jq -r '.[] | .tag_name' | head -1''',
             returnStdout: true).trim()
           env.LS_RELEASE = sh(
-            script: '''curl -s https://api.github.com/repos/${LS_USER}/${LS_REPO}/tags | jq -r '.[] | .name' |head -1 | sed 's/^.*-ls//g' ''',
+            script: '''curl -s https://api.github.com/repos/${LS_USER}/${LS_REPO}/tags | jq -r '.[] | .name' |head -1 ''',
             returnStdout: true).trim()
           env.LS_RELEASE_NOTES = sh(
             script: '''git log -1 --pretty=%B | sed -E ':a;N;$!ba;s/\\r{0,1}\\n/\\\\\\\\n/g' ''',
@@ -32,17 +33,22 @@ pipeline {
             returnStdout: true).trim()
         }
         script{
-          env.LS_TAG = sh(
-            script: '''if [ "$(git describe --exact-match --tags HEAD | sed 's/^.*-ls//g' 2>/dev/null)" == ${LS_RELEASE} ]; then echo ${LS_RELEASE}; else echo $((${LS_RELEASE} + 1)) ; fi''',
+          env.LS_RELEASE_NUMBER = sh(
+            script: '''echo ${LS_RELEASE} |sed 's/^.*-ls//g' ''',
             returnStdout: true).trim()
           sh '''curl -s https://api.github.com/repos/${EXT_USER}/${EXT_REPO}/releases | jq '. | .[0].body' | sed 's:^.\\(.*\\).$:\\1:' > releasebody.json '''
+        }
+        script{
+          env.LS_TAG_NUMBER = sh(
+            script: '''if [ "$(git rev-list -n 1 ${LS_RELEASE} 2>/dev/null)" == ${COMMIT_SHA} ]; then echo ${LS_RELEASE_NUMBER}; else echo $((${LS_RELEASE_NUMBER} + 1)) ; fi''',
+            returnStdout: true).trim()
         }
       }
     }
     stage('Build') {
       steps {
           echo "Building most current release of ${EXT_REPO}"
-          sh "docker build --no-cache -t ${DOCKERHUB_IMAGE}:${EXT_RELEASE}-ls${LS_TAG} --build-arg radarr_tag=${EXT_RELEASE} ."
+          sh "docker build --no-cache -t ${DOCKERHUB_IMAGE}:${EXT_RELEASE}-ls${LS_TAG_NUMBER} --build-arg ${BUILD_VERSION_ARG}=${EXT_RELEASE} ."
         }
     }
     stage('Test') {
@@ -55,19 +61,19 @@ pipeline {
       steps {
         sh "echo ${DOCKERHUB_PASS} | docker login -u ${DOCKERHUB_USER} --password-stdin"
         echo 'First push the latest tag'
-        sh "docker tag ${DOCKERHUB_IMAGE}:${EXT_RELEASE}-ls${LS_TAG} ${DOCKERHUB_IMAGE}:latest"
+        sh "docker tag ${DOCKERHUB_IMAGE}:${EXT_RELEASE}-ls${LS_TAG_NUMBER} ${DOCKERHUB_IMAGE}:latest"
         sh "docker push ${DOCKERHUB_IMAGE}:latest"
         echo 'Pushing by release tag'
-        sh "docker push ${DOCKERHUB_IMAGE}:${EXT_RELEASE}-ls${LS_TAG}"
+        sh "docker push ${DOCKERHUB_IMAGE}:${EXT_RELEASE}-ls${LS_TAG_NUMBER}"
       }
     }
     stage('Github-Tag-Push-Release') {
       when { branch "master" }
       steps {
         echo "Pushing New tag for current commit ${EXT_RELEASE}-ls${LS_TAG}"
-        sh '''curl -H "Authorization: token ${GITHUB_TOKEN}" -X POST https://api.github.com/repos/${LS_USER}/${LS_REPO}/git/tags -d '{"tag":"'${EXT_RELEASE}'-ls'${LS_TAG}'","object": "'${COMMIT_SHA}'","message": "Tagging Release '${EXT_RELEASE}'-ls'${LS_TAG}' to master","type": "commit",  "tagger": {"name": "LinuxServer Jenkins","email": "jenkins@linuxserver.io","date": "'${GITHUB_DATE}'"}}' '''
+        sh '''curl -H "Authorization: token ${GITHUB_TOKEN}" -X POST https://api.github.com/repos/${LS_USER}/${LS_REPO}/git/tags -d '{"tag":"'${EXT_RELEASE}'-ls'${LS_TAG_NUMBER}'","object": "'${COMMIT_SHA}'","message": "Tagging Release '${EXT_RELEASE}'-ls'${LS_TAG}' to master","type": "commit",  "tagger": {"name": "LinuxServer Jenkins","email": "jenkins@linuxserver.io","date": "'${GITHUB_DATE}'"}}' '''
         echo "Pushing New release for Tag"
-        sh ''' echo '{"tag_name":"'${EXT_RELEASE}'-ls'${LS_TAG}'","target_commitish": "master","name": "'${EXT_RELEASE}'-ls'${LS_TAG}'","body": "**LinuxServer Changes:**\\\\n\\\\n'${LS_RELEASE_NOTES}'\\\\n'${EXT_REPO}' Changes:\\\\n\\\\n' > start '''
+        sh ''' echo '{"tag_name":"'${EXT_RELEASE}'-ls'${LS_TAG_NUMBER}'","target_commitish": "master","name": "'${EXT_RELEASE}'-ls'${LS_TAG_NUMBER}'","body": "**LinuxServer Changes:**\\\\n\\\\n'${LS_RELEASE_NOTES}'\\\\n'${EXT_REPO}' Changes:\\\\n\\\\n' > start '''
         sh ''' printf '","draft": false,"prerelease": false}' >> releasebody.json'''
         sh ''' paste -d'\\0' start releasebody.json > releasebody.json.done '''
         sh ''' curl -H "Authorization: token ${GITHUB_TOKEN}" -X POST https://api.github.com/repos/${LS_USER}/${LS_REPO}/releases -d @releasebody.json.done '''
