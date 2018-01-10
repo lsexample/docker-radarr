@@ -10,6 +10,9 @@ pipeline {
     LS_RELEASE = sh(
       script: '''curl -s https://api.github.com/repos/lsexample/docker-radarr/tags | jq -r '.[] | .name' |head -1''',
       returnStdout: true).trim()
+    LS_RELEASE_NOTES = sh(
+      script: '''git log -1 --pretty=%B | sed 's/$/\\\\n/' | tr -d '\\n' ''',
+      returnStdout: true).trim()
   }
   stages {
     stage('Prep-and-tag'){
