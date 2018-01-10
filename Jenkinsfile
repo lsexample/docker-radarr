@@ -40,7 +40,13 @@ pipeline {
         }
         script{
           env.LS_TAG_NUMBER = sh(
-            script: '''if [ "$(git rev-list -n 1 ${LS_RELEASE} 2>/dev/null)" == "${COMMIT_SHA}" ]; then echo ${LS_RELEASE_NUMBER}; else echo $((${LS_RELEASE_NUMBER} + 1)) ; fi''',
+            script: '''#! /bin/bash
+                       tagsha=$(git rev-list -n 1 ${LS_RELEASE} 2>/dev/null)
+                       if [ "${tagsha}" == "${COMMIT_SHA}" ]; then 
+                         echo ${LS_RELEASE_NUMBER} 
+                       else 
+                         echo $((${LS_RELEASE_NUMBER} + 1)) 
+                       fi''',
             returnStdout: true).trim()
         }
       }
