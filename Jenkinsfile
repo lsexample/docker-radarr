@@ -13,15 +13,15 @@ pipeline {
   }
   stages {
     stage('Prep-and-tag'){
-      script {
-        LS_TAG = sh(
-          script: '''if [ "$(git describe --exact-match --tags HEAD 2>/dev/null)" == $LS_RELEASE ]; then echo $LS_RELEASE; else echo $(($LS_RELEASE + 1)) ; fi''',
-          returnStdout: true).trim()
-        NEW_TAG = sh(
-          script: '''if [ "$(git describe --exact-match --tags HEAD 2>/dev/null)" == $LS_RELEASE ]; then echo false; else echo true ; fi''',
-          returnStdout: true).trim()
-      }
       steps {
+       script {
+          LS_TAG = sh(
+            script: '''if [ "$(git describe --exact-match --tags HEAD 2>/dev/null)" == $LS_RELEASE ]; then echo $LS_RELEASE; else echo $(($LS_RELEASE + 1)) ; fi''',
+            returnStdout: true).trim()
+          NEW_TAG = sh(
+            script: '''if [ "$(git describe --exact-match --tags HEAD 2>/dev/null)" == $LS_RELEASE ]; then echo false; else echo true ; fi''',
+            returnStdout: true).trim()
+        }
         echo "LS Tag for project ${LS_TAG} newtag: ${NEW_TAG}"
       }
     }
