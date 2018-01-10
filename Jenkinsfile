@@ -19,7 +19,7 @@ pipeline {
             script: '''curl -s https://api.github.com/repos/${EXT_USER}/${EXT_REPO}/releases | jq -r '.[] | .tag_name' | head -1''',
             returnStdout: true).trim()
           env.EXT_RELEASE_NOTES = sh(
-            script: '''curl -s https://api.github.com/repos/${EXT_USER}/${EXT_REPO}/releases | jq '.[] | .body' |head -1 | sed 's/\\r//g' | sed 's:^.\\(.*\\).$:\\1:' ''',
+            script: '''curl -s https://api.github.com/repos/${EXT_USER}/${EXT_REPO}/releases | jq '.[] | .body' |head -1 | jq -R ''',
             returnStdout: true).trim()
           env.LS_RELEASE = sh(
             script: '''curl -s https://api.github.com/repos/${LS_USER}/${LS_REPO}/tags | jq -r '.[] | .name' |head -1''',
@@ -28,7 +28,7 @@ pipeline {
             script: '''git log -1 --pretty=%B | sed 's/$/\\\\\\n/' | tr -d '\\\\n' ''',
             returnStdout: true).trim()
           env.GITHUB_DATE = sh(
-            script: '''date '+%Y-%M-%dT%H:%M:%S%:z' ''',
+            script: '''date '+%Y-%m-%dT%H:%M:%S%:z' ''',
             returnStdout: true).trim()
           env.COMMIT_SHA = sh(
             script: '''git rev-parse HEAD''',
