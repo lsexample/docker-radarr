@@ -15,7 +15,6 @@ pipeline {
       returnStdout: true).trim()
     DISCORD_WEBHOOK = credentials('build_webhook_url')
     DOCKERHUB_PASS = credentials('dockerhub_pass')
-    BUILD_URL = ${env.BUILD_URL}
   }
   stages {
     stage('Prep-and-tag'){
@@ -67,7 +66,7 @@ pipeline {
   post { 
     success {
       echo "Build good send details to discord"
-      sh ''' curl -X POST --data '{"avatar_url": "https://wiki.jenkins-ci.org/download/attachments/2916393/headshot.png","embeds": [{"color": 1681177,"description": "**Build:**  '"${BUILD_NUMBER}"'\\n**Status:**  Success\\n**Job:** '"${BUILD_URL}"'\\n"}],"username": "Jenkins"}' ${DISCORD_WEBHOOK} '''
+      sh ''' curl -X POST --data '{"avatar_url": "https://wiki.jenkins-ci.org/download/attachments/2916393/headshot.png","embeds": [{"color": 1681177,"description": "**Build:**  '${env.BUILD_NUMBER}'\\n**Status:**  Success\\n**Job:** '${env.BUILD_URL}'\\n"}],"username": "Jenkins"}' ${DISCORD_WEBHOOK} '''
     }
     failure {
       echo "Build Bad sending details to discord"
