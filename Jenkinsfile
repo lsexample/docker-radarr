@@ -63,11 +63,10 @@ pipeline {
   }
   post { 
     success {
-      echo "Build completed send details to discord"
-      discordSend description: 'Jenkins Pipeline Build', footer: 'Footer Text', link: "${env.BUILD_URL}", successful: currentBuild.resultIsBetterOrEqualTo('SUCCESS'), title: "${env.JOB_NAME}", webhookURL: "${DISCORD_WEBHOOK}"
+      echo "Build good send details to discord"
+      sh ''' curl -X POST --data {"avatar_url": "https://wiki.jenkins-ci.org/download/attachments/2916393/headshot.png","embeds": [{"color": 1681177,"footer": {"text": "Build Results ${env.BUILD_NUMBER}"},"description": "**Build:**  #273\n**Status:**  success\n","title": "Build ${env.BUILD_NUMBER}","url": "${env.BUILD_URL}"}],"username": "Jenkins"} $DISCORD_WEBHOOK '''
     }
     failure {
-      discordSend description: 'Jenkins Pipeline Build', footer: 'Footer Text', link: "${env.BUILD_URL}", successful: currentBuild.resultIsBetterOrEqualTo('SUCCESS'), title: "${env.JOB_NAME}", webhookURL: "${DISCORD_WEBHOOK}"
     }
   }
 }
