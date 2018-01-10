@@ -22,7 +22,7 @@ pipeline {
             script: '''curl -s https://api.github.com/repos/${LS_USER}/${LS_REPO}/tags | jq -r '.[] | .name' |head -1 | sed 's/^.*-ls//g' ''',
             returnStdout: true).trim()
           env.LS_RELEASE_NOTES = sh(
-            script: '''git log -1 --pretty=%B | sed 's/$/\\\\\\n/' | tr -d '\\\\n' ''',
+            script: '''git log -1 --pretty=%B | sed -E ':a;N;$!ba;s/\\r{0,1}\\n/\\\\\\\\n/g' ''',
             returnStdout: true).trim()
           env.GITHUB_DATE = sh(
             script: '''date '+%Y-%m-%dT%H:%M:%S%:z' ''',
