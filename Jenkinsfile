@@ -14,6 +14,7 @@ pipeline {
       script: '''git log -1 --pretty=%B | sed 's/$/\\\\n/' | tr -d '\\n' ''',
       returnStdout: true).trim()
     DISCORD_WEBHOOK = credentials('build_webhook_url')
+    DOCKERHUB_PASS = credentials('dockerhub_pass')
   }
   stages {
     stage('Prep-and-tag'){
@@ -43,6 +44,7 @@ pipeline {
     stage('Compile-and-Push-Release') {
       when { branch "Release" }
       steps {
+        sh "echo ${DOCKERHUB_PASS} | docker login -u qcom --password-stdin"
         echo 'First push the latest tag'
         sh "docker tag qcom/radarr:${EXT_RELEASE}-ls${LS_TAG} qcom/radarr:latest"
         sh "docker push qcom/radarr:latest"
@@ -64,10 +66,11 @@ pipeline {
   post { 
     success {
       echo "Build good send details to discord"
-      sh ''' curl -X POST --data '{"avatar_url": "https://wiki.jenkins-ci.org/download/attachments/2916393/headshot.png","embeds": [{"color": 1681177,"footer": {"text": "Build Results '"${BUILD_NUMBER}"'"},"description": "**Build:**  '"${BUILD_NUMBER}"'\\n**Status:**  success\\n","title": "Build '"${BUILD_NUMBER}"'","url": "'"${BUILD_URL}"'"}],"username": "Jenkins"}' ${DISCORD_WEBHOOK} '''
+      sh ''' curl -X POST --data '{"avatar_url": "https://wiki.jenkins-ci.org/download/attachments/2916393/headshot.png","embeds": [{"color": 1681177,"description": "**Build:**  '"${BUILD_NUMBER}"'\\n**Status:**  Success\\n**Job:** '"${BUILD_URL}"'\\n"}],"username": "Jenkins"}' ${DISCORD_WEBHOOK} '''
     }
     failure {
       echo "Build Bad sending details to discord"
+      sh ''' curl -X POST --data '{"avatar_url": "https://wiki.jenkins-ci.org/download/attachments/2916393/headshot.png","embeds": [{"color": 16711680,"description": "**Build:**  '"${BUILD_NUMBER}"'\\n**Status:**  failure\\n**Job:** '"${BUILD_URL}"'\\n"}],"username": "Jenkins"}' ${DISCORD_WEBHOOK} '''
     }
   }
 }
