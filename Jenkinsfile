@@ -10,37 +10,42 @@ pipeline {
     BUILDS_DISCORD = credentials('build_webhook_url')
     DOCKERHUB_PASS = credentials('dockerhub_pass')
     GITHUB_TOKEN = credentials('github_token')
-    EXT_RELEASE = sh(
-      script: '''curl -s https://api.github.com/repos/${EXT_USER}/${EXT_REPO}/releases | jq -r '.[] | .tag_name' | head -1''',
-      returnStdout: true).trim()
-    EXT_RELEASE_NOTES = sh(
-      script: '''curl -s https://api.github.com/repos/${EXT_USER}/${EXT_REPO}/releases | jq '.[] | .body' |head -1 | sed 's:^.\\(.*\\).$:\\1:' ''',
-      returnStdout: true).trim()
-    LS_RELEASE = sh(
-      script: '''curl -s https://api.github.com/repos/${LS_USER}/${LS_REPO}/tags | jq -r '.[] | .name' |head -1''',
-      returnStdout: true).trim()
-    LS_RELEASE_NOTES = sh(
-      script: '''git log -1 --pretty=%B | sed 's/$/\\\\n/' | tr -d '\\n' ''',
-      returnStdout: true).trim()
-    GITHUB_DATE = sh(
-      script: '''date '+%Y-%M-%dT%H:%M:%S%:z' ''',
-      returnStdout: true).trim()
-    COMMIT_SHA = sh(
-      script: '''git rev-parse HEAD''',
-      returnStdout: true).trim()
-    LS_TAG = sh(
-      script: '''if [ "$(git describe --exact-match --tags HEAD 2>/dev/null)" == ${LS_RELEASE} ]; then echo ${LS_RELEASE}; else echo $((${LS_RELEASE} + 1)) ; fi''',
-      returnStdout: true).trim()
-    NEW_TAG = sh(
-      script: '''if [ "$(git describe --exact-match --tags HEAD 2>/dev/null)" == ${LS_RELEASE} ]; then echo false; else echo true ; fi''',
-      returnStdout: true).trim()
-
   }
   stages {
+    stage("Set ENV Variables"){
+      steps{
+        script{
+          env.EXT_RELEASE = sh(
+            script: '''curl -s https://api.github.com/repos/${EXT_USER}/${EXT_REPO}/releases | jq -r '.[] | .tag_name' | head -1''',
+            returnStdout: true).trim()
+          env.EXT_RELEASE_NOTES = sh(
+            script: '''curl -s https://api.github.com/repos/${EXT_USER}/${EXT_REPO}/releases | jq '.[] | .body' |head -1 | sed 's:^.\\(.*\\).$:\\1:' ''',
+            returnStdout: true).trim()
+          env.LS_RELEASE = sh(
+            script: '''curl -s https://api.github.com/repos/${LS_USER}/${LS_REPO}/tags | jq -r '.[] | .name' |head -1''',
+            returnStdout: true).trim()
+          env.LS_RELEASE_NOTES = sh(
+            script: '''git log -1 --pretty=%B | sed 's/$/\\\\n/' | tr -d '\\n' ''',
+            returnStdout: true).trim()
+          env.GITHUB_DATE = sh(
+            script: '''date '+%Y-%M-%dT%H:%M:%S%:z' ''',
+            returnStdout: true).trim()
+          env.COMMIT_SHA = sh(
+            script: '''git rev-parse HEAD''',
+            returnStdout: true).trim()
+          env.LS_TAG = sh(
+            script: '''if [ "$(git describe --exact-match --tags HEAD 2>/dev/null)" == ${env.LS_RELEASE} ]; then echo ${LS_RELEASE}; else echo $((${LS_RELEASE} + 1)) ; fi''',
+            returnStdout: true).trim()
+          env.NEW_TAG = sh(
+            script: '''if [ "$(git describe --exact-match --tags HEAD 2>/dev/null)" == ${env.LS_RELEASE} ]; then echo false; else echo true ; fi''',
+            returnStdout: true).trim()
+        }
+      }
+    }
     stage('Build') {
       steps {
           echo "Building most current release of ${EXT_REPO}"
-          sh "docker build --no-cache -t ${DOCKERHUB_IMAGE}:${EXT_RELEASE}-ls${LS_TAG} --build-arg radarr_tag=${EXT_RELEASE} ."
+          sh "docker build --no-cache -t ${DOCKERHUB_IMAGE}:${env.EXT_RELEASE}-ls${env.LS_TAG} --build-arg radarr_tag=${EXT_RELEASE} ."
         }
     }
     stage('Test') {
