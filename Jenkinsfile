@@ -13,8 +13,15 @@ pipeline {
     LS_RELEASE_NOTES = sh(
       script: '''git log -1 --pretty=%B | sed 's/$/\\\\n/' | tr -d '\\n' ''',
       returnStdout: true).trim()
-    DISCORD_WEBHOOK = credentials('build_webhook_url')
+    GITHUB_DATE = sh(
+      script: '''date '+%Y-%M-%dT%H:%M:%S%:z' ''',
+      returnStdout: true).trim()
+    COMMIT_SHA = sh(
+      script: '''git rev-parse HEAD''',
+      returnStdout: true).trim()
+    BUILDS_DISCORD = credentials('build_webhook_url')
     DOCKERHUB_PASS = credentials('dockerhub_pass')
+    GITHUB_TOKEN = credentials('github_token')
   }
   stages {
     stage('Prep-and-tag'){
@@ -41,7 +48,7 @@ pipeline {
        echo 'CI Tests for future use'
       }
     }
-    stage('Compile-and-Push-Release') {
+    stage('Docker-Push-Release') {
       when { branch "Release" }
       steps {
         sh "echo ${DOCKERHUB_PASS} | docker login -u qcom --password-stdin"
@@ -52,7 +59,16 @@ pipeline {
         sh "docker push qcom/radarr:${EXT_RELEASE}-ls${LS_TAG}"
       }
     }
-    stage('Compile-and-Push-Feature') {
+    stage('Github-Tag-Push-Release') {
+      when { branch "master" }
+      steps {
+        echo "Pushing New tag for current commit ${EXT_RELEASE}-ls${LS_TAG}"
+        sh '''curl -H "Authorization: token ${GITHUB_TOKEN}" -X POST https://api.github.com/repos/lsexample/docker-radarr/git/tags -d '{"tag":"'${EXT_RELEASE}'-ls'${LS_TAG}'","object": "${COMMIT_SHA}","message": "Tagging Release '${EXT_RELEASE}'-ls'${LS_TAG}' to master","type": "commit",  "tagger": {"name": "LinuxServer Jenkins","email": "jenkins@linuxserver.io","date": "'${GITHUB_DATE}'"}}' '''
+        echo "Pushing New release for Tag"
+        sh ''' curl -H "Authorization: token ${GITHUB_TOKEN}" -X POST https://api.github.com/repos/lsexample/docker-radarr/releases -d '{"tag_name":"'${EXT_RELEASE}'-ls'${LS_TAG}'","target_commitish": "master","name": "'${EXT_RELEASE}'-ls'${LS_TAG}'","body": "**LinuxServer Changes:**\\n\\n'${LS_RELEASE_NOTES}'\\nRadarr Changes:\\n\\n'${EXT_RELEASE_NOTES}'","draft": false,"prerelease": false}' '''
+      }
+    }
+    stage('Docker-Push-Feature') {
       when { 
         not { 
          branch "Release" 
@@ -66,11 +82,11 @@ pipeline {
   post { 
     success {
       echo "Build good send details to discord"
-      sh ''' curl -X POST --data '{"avatar_url": "https://wiki.jenkins-ci.org/download/attachments/2916393/headshot.png","embeds": [{"color": 1681177,"description": "**Build:**  '${BUILD_NUMBER}'\\n**Status:**  Success\\n**Job:** '${RUN_DISPLAY_URL}'\\n"}],"username": "Jenkins"}' ${DISCORD_WEBHOOK} '''
+      sh ''' curl -X POST --data '{"avatar_url": "https://wiki.jenkins-ci.org/download/attachments/2916393/headshot.png","embeds": [{"color": 1681177,"description": "**Build:**  '${BUILD_NUMBER}'\\n**Status:**  Success\\n**Job:** '${RUN_DISPLAY_URL}'\\n"}],"username": "Jenkins"}' ${BUILDS_DISCORD} '''
     }
     failure {
       echo "Build Bad sending details to discord"
-      sh ''' curl -X POST --data '{"avatar_url": "https://wiki.jenkins-ci.org/download/attachments/2916393/headshot.png","embeds": [{"color": 16711680,"description": "**Build:**  '${BUILD_NUMBER}'\\n**Status:**  failure\\n**Job:** '${RUN_DISPLAY_URL}'\\n"}],"username": "Jenkins"}' ${DISCORD_WEBHOOK} '''
+      sh ''' curl -X POST --data '{"avatar_url": "https://wiki.jenkins-ci.org/download/attachments/2916393/headshot.png","embeds": [{"color": 16711680,"description": "**Build:**  '${BUILD_NUMBER}'\\n**Status:**  failure\\n**Job:** '${RUN_DISPLAY_URL}'\\n"}],"username": "Jenkins"}' ${BUILDS_DISCORD} '''
     }
   }
 }
