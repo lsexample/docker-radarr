@@ -40,7 +40,7 @@ pipeline {
         }
         script{
           env.LS_TAG_NUMBER = sh(
-            script: '''if [ "$(git rev-list -n 1 ${LS_RELEASE} 2>/dev/null)" -eq "${COMMIT_SHA}" ]; then echo ${LS_RELEASE_NUMBER}; else echo $((${LS_RELEASE_NUMBER} + 1)) ; fi''',
+            script: '''if [ "$(git rev-list -n 1 ${LS_RELEASE} 2>/dev/null)" == "${COMMIT_SHA}" ]; then echo ${LS_RELEASE_NUMBER}; else echo $((${LS_RELEASE_NUMBER} + 1)) ; fi''',
             returnStdout: true).trim()
         }
       }
@@ -73,7 +73,7 @@ pipeline {
         echo "Pushing New tag for current commit ${EXT_RELEASE}-ls${LS_TAG_NUMBER}"
         sh '''curl -H "Authorization: token ${GITHUB_TOKEN}" -X POST https://api.github.com/repos/${LS_USER}/${LS_REPO}/git/tags -d '{"tag":"'${EXT_RELEASE}'-ls'${LS_TAG_NUMBER}'","object": "'${COMMIT_SHA}'","message": "Tagging Release '${EXT_RELEASE}'-ls'${LS_TAG_NUMBER}' to master","type": "commit",  "tagger": {"name": "LinuxServer Jenkins","email": "jenkins@linuxserver.io","date": "'${GITHUB_DATE}'"}}' '''
         echo "Pushing New release for Tag"
-        sh ''' echo '{"tag_name":"'${EXT_RELEASE}'-ls'${LS_TAG_NUMBER}'","target_commitish": "master","name": "'${EXT_RELEASE}'-ls'${LS_TAG_NUMBER}'","body": "**LinuxServer Changes:**\\\\n\\\\n'${LS_RELEASE_NOTES}'\\\\n'${EXT_REPO}' Changes:\\\\n\\\\n' > start '''
+        sh ''' echo '{"tag_name":"'${EXT_RELEASE}'-ls'${LS_TAG_NUMBER}'","target_commitish": "master","name": "'${EXT_RELEASE}'-ls'${LS_TAG_NUMBER}'","body": "**LinuxServer Changes:**\\\\n\\\\n'${LS_RELEASE_NOTES}'\\\\n**'${EXT_REPO}' Changes:**\\\\n\\\\n' > start '''
         sh ''' printf '","draft": false,"prerelease": false}' >> releasebody.json'''
         sh ''' paste -d'\\0' start releasebody.json > releasebody.json.done '''
         sh ''' curl -H "Authorization: token ${GITHUB_TOKEN}" -X POST https://api.github.com/repos/${LS_USER}/${LS_REPO}/releases -d @releasebody.json.done '''
