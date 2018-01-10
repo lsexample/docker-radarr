@@ -19,7 +19,7 @@ pipeline {
             script: '''curl -s https://api.github.com/repos/${EXT_USER}/${EXT_REPO}/releases | jq -r '.[] | .tag_name' | head -1''',
             returnStdout: true).trim()
           env.EXT_RELEASE_NOTES = sh(
-            script: '''curl -s https://api.github.com/repos/${EXT_USER}/${EXT_REPO}/releases | jq '. | .[0].body' | sed 's:^.\\(.*\\).$:\\1:' ''',
+            script: '''curl -s https://api.github.com/repos/${EXT_USER}/${EXT_REPO}/releases | jq '. | .[0].body' | sed 's:^.\\(.*\\).$:\\1:' | sed 's/[][`~!@#$%^&*()-_=+{}\\|;:",<.>/?'"'"']/\\\\&/g' ''',
             returnStdout: true).trim()
           env.LS_RELEASE = sh(
             script: '''curl -s https://api.github.com/repos/${LS_USER}/${LS_REPO}/tags | jq -r '.[] | .name' |head -1''',
