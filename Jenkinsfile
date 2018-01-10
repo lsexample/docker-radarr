@@ -64,7 +64,7 @@ pipeline {
   post { 
     success {
       echo "Build good send details to discord"
-      sh ''' curl -X POST --data {"avatar_url": "https://wiki.jenkins-ci.org/download/attachments/2916393/headshot.png","embeds": [{"color": 1681177,"footer": {"text": "Build Results ${BUILD_NUMBER}"},"description": "**Build:**  ${BUILD_NUMBER}\n**Status:**  success\n","title": "Build ${BUILD_NUMBER}","url": "${BUILD_URL}"}],"username": "Jenkins"} ${DISCORD_WEBHOOK} '''
+      sh ''' curl -X POST --data '{"avatar_url": "https://wiki.jenkins-ci.org/download/attachments/2916393/headshot.png","embeds": [{"color": 1681177,"footer": {"text": "Build Results '"${BUILD_NUMBER}"'"},"description": "**Build:**  '"${BUILD_NUMBER}"'\n**Status:**  success\n","title": "Build '"${BUILD_NUMBER}"'","url": "'"${BUILD_URL}"'"}],"username": "Jenkins"}' ${DISCORD_WEBHOOK} '''
     }
     failure {
       echo "Build Bad sending details to discord"
