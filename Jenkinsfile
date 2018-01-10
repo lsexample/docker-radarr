@@ -13,6 +13,7 @@ pipeline {
     LS_RELEASE_NOTES = sh(
       script: '''git log -1 --pretty=%B | sed 's/$/\\\\n/' | tr -d '\\n' ''',
       returnStdout: true).trim()
+    DISCORD_WEBHOOK = credentials('build_webhook_url')
   }
   stages {
     stage('Prep-and-tag'){
@@ -63,10 +64,10 @@ pipeline {
   post { 
     success {
       echo "Build completed send details to discord"
-      discordSend description: 'Jenkins Pipeline Build', footer: 'Footer Text', link: "${env.BUILD_URL}", successful: currentBuild.resultIsBetterOrEqualTo('SUCCESS'), title: "${env.JOB_NAME}", webhookURL: 'https://discordapp.com/api/webhooks/400217800591015954/SUBYEIjDp19x6rBaHw7nruXoV7w_g2l1JT7gJyDPUQuyvB7CADj2I8lyajPTt2AJMfhp'
+      discordSend description: 'Jenkins Pipeline Build', footer: 'Footer Text', link: "${env.BUILD_URL}", successful: currentBuild.resultIsBetterOrEqualTo('SUCCESS'), title: "${env.JOB_NAME}", webhookURL: ${DISCORD_WEBHOOK}
     }
     failure {
-      discordSend description: 'Jenkins Pipeline Build', footer: 'Footer Text', link: "${env.BUILD_URL}", successful: currentBuild.resultIsBetterOrEqualTo('SUCCESS'), title: "${env.JOB_NAME}", webhookURL: 'https://discordapp.com/api/webhooks/400217800591015954/SUBYEIjDp19x6rBaHw7nruXoV7w_g2l1JT7gJyDPUQuyvB7CADj2I8lyajPTt2AJMfhp'
+      discordSend description: 'Jenkins Pipeline Build', footer: 'Footer Text', link: "${env.BUILD_URL}", successful: currentBuild.resultIsBetterOrEqualTo('SUCCESS'), title: "${env.JOB_NAME}", webhookURL: ${DISCORD_WEBHOOK}
     }
   }
 }
