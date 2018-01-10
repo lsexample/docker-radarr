@@ -75,7 +75,12 @@ pipeline {
       }
     }
     stage('Github-Tag-Push-Release') {
-      when { branch "master" }
+      when { 
+        branch "master"
+        expression {
+          env.LS_RELEASE != env.EXT_RELEASE + '-ls' + env.LS_TAG_NUMBER
+        }
+      }
       steps {
         echo "Pushing New tag for current commit ${EXT_RELEASE}-ls${LS_TAG_NUMBER}"
         sh '''curl -H "Authorization: token ${GITHUB_TOKEN}" -X POST https://api.github.com/repos/${LS_USER}/${LS_REPO}/git/tags -d '{"tag":"'${EXT_RELEASE}'-ls'${LS_TAG_NUMBER}'","object": "'${COMMIT_SHA}'","message": "Tagging Release '${EXT_RELEASE}'-ls'${LS_TAG_NUMBER}' to master","type": "commit",  "tagger": {"name": "LinuxServer Jenkins","email": "jenkins@linuxserver.io","date": "'${GITHUB_DATE}'"}}' '''
