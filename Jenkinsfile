@@ -19,7 +19,7 @@ pipeline {
             script: '''curl -s https://api.github.com/repos/${EXT_USER}/${EXT_REPO}/releases | jq -r '.[] | .tag_name' | head -1''',
             returnStdout: true).trim()
           env.LS_RELEASE = sh(
-            script: '''curl -s https://api.github.com/repos/${LS_USER}/${LS_REPO}/tags | jq -r '.[] | .name' |head -1''',
+            script: '''curl -s https://api.github.com/repos/${LS_USER}/${LS_REPO}/tags | jq -r '.[] | .name' |head -1 | sed 's/^.*-ls//g' ''',
             returnStdout: true).trim()
           env.LS_RELEASE_NOTES = sh(
             script: '''git log -1 --pretty=%B | sed 's/$/\\\\\\n/' | tr -d '\\\\n' ''',
@@ -33,10 +33,7 @@ pipeline {
         }
         script{
           env.LS_TAG = sh(
-            script: '''if [ "$(git describe --exact-match --tags HEAD 2>/dev/null)" == ${LS_RELEASE} ]; then echo ${LS_RELEASE}; else echo $((${LS_RELEASE} + 1)) ; fi''',
-            returnStdout: true).trim()
-          env.NEW_TAG = sh(
-            script: '''if [ "$(git describe --exact-match --tags HEAD 2>/dev/null)" == ${LS_RELEASE} ]; then echo false; else echo true ; fi''',
+            script: '''if [ "$(git describe --exact-match --tags HEAD | sed 's/^.*-ls//g' 2>/dev/null)" == ${LS_RELEASE} ]; then echo ${LS_RELEASE}; else echo $((${LS_RELEASE} + 1)) ; fi''',
             returnStdout: true).trim()
           sh '''curl -s https://api.github.com/repos/${EXT_USER}/${EXT_REPO}/releases | jq '. | .[0].body' | sed 's:^.\\(.*\\).$:\\1:' > releasebody.json '''
         }
