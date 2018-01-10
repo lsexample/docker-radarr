@@ -39,9 +39,8 @@ pipeline {
           sh '''curl -s https://api.github.com/repos/${EXT_USER}/${EXT_REPO}/releases | jq '. | .[0].body' | sed 's:^.\\(.*\\).$:\\1:' > releasebody.json '''
         }
         script{
-          sh "git rev-list -n 1 ${LS_RELEASE} 2>/dev/null"
           env.LS_TAG_NUMBER = sh(
-            script: '''if [ "$(git rev-list -n 1 ${LS_RELEASE} 2>/dev/null)" == ${COMMIT_SHA} ]; then echo ${LS_RELEASE_NUMBER}; else echo $((${LS_RELEASE_NUMBER} + 1)) ; fi''',
+            script: '''if [ "$(git rev-list -n 1 ${LS_RELEASE} 2>/dev/null)" -eq ${COMMIT_SHA} ]; then echo ${LS_RELEASE_NUMBER}; else echo $((${LS_RELEASE_NUMBER} + 1)) ; fi''',
             returnStdout: true).trim()
         }
       }
