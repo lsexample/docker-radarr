@@ -64,10 +64,10 @@ pipeline {
   post { 
     success {
       echo "Build completed send details to discord"
-      discordSend description: 'Jenkins Pipeline Build', footer: 'Footer Text', link: "${env.BUILD_URL}", successful: currentBuild.resultIsBetterOrEqualTo('SUCCESS'), title: "${env.JOB_NAME}", webhookURL: ${DISCORD_WEBHOOK}
+      discordSend description: 'Jenkins Pipeline Build', footer: 'Footer Text', link: "${env.BUILD_URL}", successful: currentBuild.resultIsBetterOrEqualTo('SUCCESS'), title: "${env.JOB_NAME}", webhookURL: "${DISCORD_WEBHOOK}"
     }
     failure {
-      discordSend description: 'Jenkins Pipeline Build', footer: 'Footer Text', link: "${env.BUILD_URL}", successful: currentBuild.resultIsBetterOrEqualTo('SUCCESS'), title: "${env.JOB_NAME}", webhookURL: ${DISCORD_WEBHOOK}
+      discordSend description: 'Jenkins Pipeline Build', footer: 'Footer Text', link: "${env.BUILD_URL}", successful: currentBuild.resultIsBetterOrEqualTo('SUCCESS'), title: "${env.JOB_NAME}", webhookURL: "${DISCORD_WEBHOOK}"
     }
   }
 }
