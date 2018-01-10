@@ -49,5 +49,24 @@ pipeline {
         sh "docker push qcom/radarr:${EXT_RELEASE}-ls${LS_TAG}"
       }
     }
+    stage('Compile-and-Push-Feature') {
+      when { 
+        not { 
+         branch "Release" 
+        }
+      }
+      steps {
+        echo "nothing for now"
+      }
+    }
+  }
+  post { 
+    success {
+      echo "Build completed send details to discord"
+      discordSend description: 'Jenkins Pipeline Build', footer: 'Footer Text', link: BUILD_URL, successful: currentBuild.resultIsBetterOrEqualTo('SUCCESS'), title: JOB_NAME, webhookURL: 'https://discordapp.com/api/webhooks/400217800591015954/SUBYEIjDp19x6rBaHw7nruXoV7w_g2l1JT7gJyDPUQuyvB7CADj2I8lyajPTt2AJMfhp'
+    }
+    failure {
+      discordSend description: 'Jenkins Pipeline Build', footer: 'Footer Text', link: BUILD_URL, successful: currentBuild.resultIsBetterOrEqualTo('SUCCESS'), title: JOB_NAME, webhookURL: 'https://discordapp.com/api/webhooks/400217800591015954/SUBYEIjDp19x6rBaHw7nruXoV7w_g2l1JT7gJyDPUQuyvB7CADj2I8lyajPTt2AJMfhp'
+    }
   }
 }
